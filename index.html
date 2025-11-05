@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mindful Minute</title>
+  <style>
+    :root{
+      color-scheme: light dark;
+      --bg: #0f172a;
+      --panel: #111827;
+      --fg: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2:#22d3ee;
+      --ring: rgba(56,189,248,.6);
+      --bar-bg:#1f2937;
+      --shadow: 0 10px 40px rgba(0,0,0,.35);
+      --focus: 0 0 0 2px #0ea5e9 inset,0 0 0 4px rgba(14,165,233,.25);
+    }
+    @media (prefers-color-scheme: light){
+      :root{ --bg:#f6f9ff; --panel:#ffffff; --fg:#0f172a; --muted:#475569; --bar-bg:#e5e7eb; --shadow:0 8px 30px rgba(2,6,23,.08);}  
+    }
+    html[data-theme="dark"]{ --bg:#0f172a; --panel:#0b1220; --fg:#e5e7eb; --muted:#9aa4b2; --bar-bg:#111827; --shadow:0 10px 40px rgba(0,0,0,.45);}  
+    html[data-theme="light"]{ --bg:#f6f9ff; --panel:#ffffff; --fg:#0f172a; --muted:#475569; --bar-bg:#e5e7eb; --shadow:0 8px 30px rgba(2,6,23,.08);}  
+
+    *{box-sizing:border-box}
+    body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji; color:var(--fg); min-height:100svh; display:grid; place-items:center; background:var(--bg); overflow-x:hidden}
+
+    /* ===== Animated background effects ===== */
+    .fx-aurora, .fx-noise, .fx-grid{ position:fixed; inset:0; pointer-events:none; z-index:-2; }
+    .fx-aurora::before, .fx-aurora::after{
+      content:""; position:absolute; inset:-20% -10%; filter:blur(60px); opacity:.55;
+      background: radial-gradient(40% 60% at 20% 30%, rgba(56,189,248,.45), transparent),
+                  radial-gradient(50% 50% at 80% 70%, rgba(34,211,238,.4), transparent),
+                  radial-gradient(30% 40% at 50% 20%, rgba(168,85,247,.25), transparent);
+      animation: auroraA 24s ease-in-out infinite alternate;
+    }
+    .fx-aurora::after{ animation: auroraB 32s ease-in-out infinite alternate; mix-blend-mode: screen; opacity:.35 }
+    @keyframes auroraA{ 0%{ transform:translate3d(-2%, -1%, 0) scale(1)} 100%{ transform:translate3d(3%, 2%, 0) scale(1.08)} }
+    @keyframes auroraB{ 0%{ transform:translate3d(2%, 1%, 0) scale(1)} 100%{ transform:translate3d(-3%, -2%, 0) scale(1.05)} }
+
+    .fx-grid{ z-index:-1; background:
+      radial-gradient(ellipse at top, rgba(255,255,255,.06), transparent 60%),
+      conic-gradient(from 180deg at 50% 50%, rgba(255,255,255,.05), transparent 30%, rgba(255,255,255,.05) 60%, transparent 85%, rgba(255,255,255,.05)),
+      linear-gradient(transparent 31px, rgba(148,163,184,.12) 32px, transparent 33px),
+      linear-gradient(90deg, transparent 31px, rgba(148,163,184,.12) 32px, transparent 33px);
+      background-size: auto, auto, 32px 32px, 32px 32px;
+      mask-image: radial-gradient(60% 50% at 50% 50%, black 40%, transparent 100%);
+      opacity:.35;
+    }
+
+    /* subtle film grain */
+    .fx-noise{ z-index:-1; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 0.05 0"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>'); opacity:.15; mix-blend-mode: overlay; }
+
+    .app{ width:min(760px,92vw); display:grid; gap:16px; }
+
+    .header{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .title{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px; }
+    .badge{ font-size:.8rem; color:var(--muted); background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.08)); padding:6px 10px; border-radius:999px; border:1px solid rgba(148,163,184,.25); box-shadow: inset 0 1px 0 rgba(255,255,255,.2); backdrop-filter: blur(6px); }
+    .toolbar{ display:flex; gap:8px; align-items:center; }
+
+    button, select{ font:inherit; color:inherit; }
+    .btn{ padding:10px 14px; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.08)); border:1px solid rgba(148,163,184,.25); box-shadow:var(--shadow); cursor:pointer; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; backdrop-filter: blur(6px); }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 12px 50px rgba(0,0,0,.25); border-color: rgba(148,163,184,.45); }
+    .btn:active{ transform: translateY(0); box-shadow: var(--shadow); }
+    .btn[disabled]{ opacity:.6; cursor:not-allowed; filter:saturate(.8); }
+    .btn.ghost{ background:transparent; box-shadow:none; }
+    .btn:focus-visible{ outline:none; box-shadow:var(--focus); }
+
+    .surface{ background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.08)); border:1px solid rgba(148,163,184,.2); border-radius:16px; padding:16px; box-shadow:var(--shadow); backdrop-filter: blur(10px); }
+
+    .mode-row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .chip{ border:1px solid rgba(148,163,184,.35); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.08)); padding:8px 12px; border-radius:999px; cursor:pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+    .chip:hover{ transform: translateY(-1px); border-color: rgba(148,163,184,.55); }
+    .chip[aria-pressed="true"]{ background:conic-gradient(from 180deg at 50% 50%, var(--accent), var(--accent-2), var(--accent)); color:#002; border-color:transparent; }
+
+    .breath-wrap{ display:grid; gap:12px; place-items:center; padding:20px; position:relative; overflow:hidden; }
+    .breath{ height:260px; width:100%; display:grid; place-items:center; position:relative; }
+
+    /* Breathing orb with animated rings and orbit */
+    .circle{
+      width:68px; height:68px; border-radius:999px; position:relative;
+      border:2px solid var(--accent);
+      box-shadow:0 0 40px var(--ring), inset 0 0 30px rgba(56,189,248,.2);
+      animation:breathe 8s ease-in-out infinite paused;
+      background:
+        radial-gradient(60px 60px at 30% 30%, rgba(56,189,248,.25), transparent),
+        radial-gradient(80px 80px at 70% 70%, rgba(34,211,238,.2), transparent);
+    }
+    .circle::before, .circle::after{
+      content:""; position:absolute; inset:-16px; border-radius:inherit; 
+      border:1px solid rgba(56,189,248,.35); filter: blur(.2px);
+    }
+    .circle::before{ animation: ringPulse 8s ease-in-out infinite; }
+    .circle::after{ inset:-32px; border-color: rgba(56,189,248,.2); animation: ringPulse 8s ease-in-out infinite reverse; }
+
+    .ring{ position:absolute; width:140px; height:140px; border-radius:999px; inset:0; margin:auto; border:1px dashed rgba(148,163,184,.3); animation: spin 24s linear infinite; }
+    .orbit{ position:absolute; width:8px; height:8px; border-radius:999px; background:var(--accent); box-shadow:0 0 14px var(--ring); animation: orbit 8s ease-in-out infinite; }
+
+    .running .circle{ animation-play-state:running }
+    @keyframes breathe{ 0%{ transform:scale(1) } 25%{ transform:scale(1.65) } 50%{ transform:scale(2.05) } 75%{ transform:scale(1.65) } 100%{ transform:scale(1) } }
+    @keyframes ringPulse{ 0%,100%{ transform:scale(1); opacity:.9 } 50%{ transform:scale(1.25); opacity:.4 } }
+    @keyframes spin{ to{ transform: rotate(360deg) } }
+    @keyframes orbit{ 0%{ transform: translate(70px,0) } 25%{ transform: translate(0,70px) } 50%{ transform: translate(-70px,0) } 75%{ transform: translate(0,-70px) } 100%{ transform: translate(70px,0) } }
+
+    .cue{ font-weight:700; letter-spacing:.2px; text-transform:uppercase; filter: drop-shadow(0 1px 0 rgba(0,0,0,.2)); animation: cueFade .6s ease; }
+    @keyframes cueFade{ from{ opacity:0; transform: translateY(4px) } to{ opacity:1; transform:none } }
+
+    .quote{ color:var(--muted); min-height:2.2em; text-align:center; animation: quoteSwap .6s ease; }
+    @keyframes quoteSwap{ from{ opacity:0; transform: translateY(6px)} to{ opacity:1; transform:none } }
+
+    .controls{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+
+    .progress{ height:12px; background:var(--bar-bg); border-radius:999px; overflow:hidden; position:relative; }
+    .bar{ height:100%; width:0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s linear; position:relative; }
+    .bar::after{ content:""; position:absolute; inset:0; background: linear-gradient(90deg, rgba(255,255,255,.25) 0, rgba(255,255,255,0) 60%); mix-blend-mode: overlay; animation: shine 2s linear infinite; background-size: 200% 100%; }
+    @keyframes shine{ to{ background-position: 200% 0 } }
+
+    .footer{ display:grid; gap:8px; }
+
+    .settings{ display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; color:var(--muted); }
+    .switch{ display:inline-flex; align-items:center; gap:6px; padding:8px 10px; border-radius:12px; border:1px solid rgba(148,163,184,.25); background:transparent; cursor:pointer; }
+
+    .closing{ text-align:center; padding:8px; font-style:italic; color:var(--muted); min-height:1.6em; animation: quoteSwap .6s ease; }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      *{ animation: none !important; transition: none !important }
+    }
+    /* Extra animations */
+    .fx-canvas{ position:fixed; inset:0; pointer-events:none; z-index:-1 }
+
+    /* Pause aurora by default. Run during session. */
+    .fx-aurora::before, .fx-aurora::after{ animation-play-state: paused }
+    .bg-animate .fx-aurora::before, .bg-animate .fx-aurora::after{ animation-play-state: running }
+
+    /* Tilted cards */
+    .surface[data-tilt]{ transform-style:preserve-3d; transform: perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)); transition: transform .15s ease }
+
+    /* Button ripple */
+    .btn{ position:relative; overflow:hidden }
+    .btn .ripple{ position:absolute; border-radius:999px; width:12px; height:12px; left:0; top:0; transform:translate(-50%,-50%); background:rgba(255,255,255,.35); filter: blur(.2px); pointer-events:none; animation:ripple .6s ease-out forwards }
+    @keyframes ripple{ to{ opacity:0; transform:translate(-50%,-50%) scale(18) } }
+
+    /* Floating words near the orb */
+    .float-word{ position:absolute; left:50%; top:50%; translate:-50% -50%; font-size:.9rem; color:var(--muted); opacity:0; animation: wordRise 1.2s ease forwards; text-shadow:0 1px 0 rgba(0,0,0,.2) }
+    @keyframes wordRise{ from{ transform: translateY(8px); opacity:0 } to{ transform: translateY(-16px); opacity:1 } }
+
+    /* Orb glow uses JS-updated CSS var */
+    .circle{ box-shadow: 0 0 calc(var(--orbGlow,40) * 1px) var(--ring), inset 0 0 30px rgba(56,189,248,.2) }
+</style>
+</head>
+<body>
+  <div class="fx-aurora"></div>
+  <div class="fx-grid"></div>
+  <div class="fx-noise"></div>
+  <canvas id="fxCanvas" class="fx-canvas"></canvas>
+  <div class="app">
+    <header class="header">
+      <div class="title">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" opacity=".35"/><path d="M12 5v14M5 12h14" stroke="currentColor"/></svg>
+        <div>Mindful Minute</div>
+        <span class="badge">60s</span>
+      </div>
+      <div class="toolbar">
+        <button id="themeToggle" class="btn ghost" aria-pressed="false" title="Toggle light/dark">Theme</button>
+      </div>
+    </header>
+
+    <section class="surface" aria-label="Mode">
+      <div class="mode-row">
+        <span style="color:var(--muted)">Section:</span>
+        <button class="chip" data-mode="calm" aria-pressed="true">Calm</button>
+        <button class="chip" data-mode="focus" aria-pressed="false">Focus</button>
+        <button class="chip" data-mode="gratitude" aria-pressed="false">Gratitude</button>
+      </div>
+    </section>
+
+    <section class="surface breath-wrap">
+      <div class="breath" aria-hidden="true">
+        <div class="ring"></div>
+        <div class="orbit" aria-hidden="true"></div>
+        <div class="circle" id="circle"></div>
+      </div>
+      <p id="cue" class="cue" aria-live="polite">Inhale</p>
+      <p id="quote" class="quote"></p>
+
+      <div class="controls">
+        <button id="start" class="btn">Start 60s</button>
+        <button id="stop" class="btn" disabled>Stop</button>
+        <button id="mute" class="btn" aria-pressed="false">Mute</button>
+        <button id="restartAudio" class="btn">Restart sound</button>
+      </div>
+
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="60" aria-valuenow="0">
+        <div id="bar" class="bar"></div>
+      </div>
+
+      <p id="closing" class="closing" aria-live="polite"></p>
+    </section>
+
+    <section class="footer settings surface">
+      <div class="settings">
+        <span>Tips:</span>
+        <span>Space toggles start/stop</span>
+        <span>Press Theme to switch</span>
+        <span>Pick a Section to change quotes</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- Audio -->
+  <audio id="ambient" src="sounds/ambient.mp3" loop preload="auto"></audio>
+  <audio id="chime" src="sounds/chime.mp3" preload="auto"></audio>
+
+  <script>
+    // ===== Theme toggle (system/light/dark with persistence) =====
+    const root = document.documentElement;
+    const themeBtn = document.getElementById('themeToggle');
+    function applyTheme(t){ root.setAttribute('data-theme', t); localStorage.setItem('mm-theme', t); themeBtn.setAttribute('aria-pressed', String(t==='dark')); themeBtn.textContent = t==='dark' ? 'Light mode' : 'Dark mode'; }
+    (function initTheme(){ const saved = localStorage.getItem('mm-theme'); if(saved){ applyTheme(saved); } else { applyTheme('system'); } })();
+    themeBtn.addEventListener('click', ()=>{ const cur = root.getAttribute('data-theme'); applyTheme(cur==='dark' ? 'light' : 'dark'); });
+
+    // ===== Elements =====
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const muteBtn = document.getElementById('mute');
+    const restartBtn = document.getElementById('restartAudio');
+    const quoteEl = document.getElementById('quote');
+    const cueEl = document.getElementById('cue');
+    const bar = document.getElementById('bar');
+    const closingEl = document.getElementById('closing');
+    const ambient = document.getElementById('ambient');
+    const chime = document.getElementById('chime');
+    const circle = document.getElementById('circle');
+
+    // ===== Sectioned quotes =====
+    const QUOTES = {
+      calm: {
+        start:[
+          'Breathe in calm. Breathe out tension.',
+          'Slow breath. Quiet mind.',
+          'Let thoughts pass like clouds.'
+        ],
+        end:[
+          'Carry this calm into your next step.',
+          'You can return to your breath anytime.',
+          'Peace grows with practice.'
+        ]
+      },
+      focus: {
+        start:[
+          'One minute to reset your focus.',
+          'Inhale clarity. Exhale noise.',
+          'Center now. Perform next.'
+        ],
+        end:[
+          'Focus is a choice you can renew.',
+          'Start your next task with one clear action.',
+          'Attention follows intention.'
+        ]
+      },
+      gratitude: {
+        start:[
+          'Inhale gratitude. Exhale haste.',
+          'Notice one good thing right now.',
+          'A thankful breath brightens the day.'
+        ],
+        end:[
+          'Take this gratitude with you.',
+          'Let appreciation color the next hour.',
+          'Small thanks. Big shift.'
+        ]
+      }
+    };
+
+    let mode = 'calm';
+    const chips = Array.from(document.querySelectorAll('.chip'));
+    chips.forEach(c=>c.addEventListener('click',()=>{
+      chips.forEach(x=>x.setAttribute('aria-pressed','false'));
+      c.setAttribute('aria-pressed','true');
+      mode = c.dataset.mode;
+      pickQuote('start');
+    }));
+
+    function rand(arr){ return arr[Math.floor(Math.random()*arr.length)] }
+    function pickQuote(phase){ const a = QUOTES[mode]?.[phase] || []; quoteEl.textContent = a.length? rand(a):''; }
+
+    // ===== Session timing =====
+    const DUR_TOTAL = 60_000; // 60s
+    const CYCLE = 8_000;      // 8s per breath cycle
+    const HALF = CYCLE/2;
+    let t0=null, raf=null;
+
+    function setCue(ms){ const into = ms % CYCLE; cueEl.textContent = into < HALF ? 'Inhale' : 'Exhale'; }
+    function setProgress(el){ const secs = Math.min(60, Math.round(el/1000)); document.querySelector('.progress').setAttribute('aria-valuenow', String(secs)); bar.style.width = `${(el/DUR_TOTAL)*100}%`; }
+
+    function loop(ts){ if(!t0) t0 = ts; const elapsed = ts - t0; setCue(elapsed); setProgress(elapsed); if(elapsed >= DUR_TOTAL) return endSession(); raf = requestAnimationFrame(loop); }
+
+    // ===== Audio controls =====
+    function playAmbient(){ if(muteBtn.getAttribute('aria-pressed')==='true') return; ambient.play().catch(()=>{}); }
+    function pauseAmbient(){ ambient.pause(); }
+    function restartAmbient(){ try{ ambient.currentTime = 0; playAmbient(); }catch(_){} }
+
+    // ===== Session lifecycle =====
+    function startSession(){ startBtn.disabled=true; stopBtn.disabled=false; document.body.classList.add('running'); circle.classList.add('running'); pickQuote('start'); closingEl.textContent=''; t0=null; raf = requestAnimationFrame(loop); playAmbient(); }
+    function endSession(){ cancelAnimationFrame(raf); raf=null; startBtn.disabled=false; stopBtn.disabled=true; document.body.classList.remove('running'); circle.classList.remove('running'); bar.style.width='100%'; pauseAmbient(); chime.currentTime=0; chime.play().catch(()=>{}); // closing quote per request
+      const q = rand(QUOTES[mode].end);
+      closingEl.textContent = q; // "carefully selected" closing encouragement
+      setTimeout(()=>{ bar.style.width='0%'; cueEl.textContent='Inhale'; }, 1200);
+    }
+    function stopSession(){ cancelAnimationFrame(raf); raf=null; startBtn.disabled=false; stopBtn.disabled=true; document.body.classList.remove('running'); circle.classList.remove('running'); pauseAmbient(); bar.style.width='0%'; cueEl.textContent='Inhale'; closingEl.textContent=''; }
+
+    // ===== Bindings =====
+    startBtn.addEventListener('click', startSession);
+    stopBtn.addEventListener('click', stopSession);
+    muteBtn.addEventListener('click', ()=>{ const pressed = muteBtn.getAttribute('aria-pressed')==='true'; const next = !pressed; muteBtn.setAttribute('aria-pressed', String(next)); muteBtn.textContent = next? 'Unmute':'Mute'; if(next) pauseAmbient(); else playAmbient(); });
+    restartBtn.addEventListener('click', restartAmbient);
+
+    document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); if(startBtn.disabled) stopSession(); else startSession(); }});
+
+    // first paint
+    pickQuote('start');
+    // ===== Visual FX: particles, confetti, ripples, tilt, glow sync =====
+    (function(){
+      const fx = document.getElementById('fxCanvas');
+      const ctx = fx.getContext('2d');
+      function resize(){ fx.width = innerWidth; fx.height = innerHeight; }
+      addEventListener('resize', resize); resize();
+
+      const particles = [];
+      function addParticle(x,y,opts={}){
+        particles.push({
+          x, y,
+          vx: (Math.random()-0.5) * (opts.spread||1.8),
+          vy: (Math.random()-0.5) * (opts.spread||1.8) - (opts.lift||0),
+          r: opts.r !== undefined ? opts.r : (1 + Math.random()*2.2),
+          life: opts.life !== undefined ? opts.life : 60,
+          color: opts.color || 'rgba(56,189,248,0.8)',
+          gravity: opts.gravity !== undefined ? opts.gravity : 0.02
+        });
+      }
+      function loopFX(){
+        ctx.clearRect(0,0,fx.width,fx.height);
+        ctx.globalCompositeOperation = 'lighter';
+        for(let i=particles.length-1;i>=0;i--){
+          const p = particles[i];
+          p.vy += p.gravity; p.x += p.vx; p.y += p.vy; p.life--;
+          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.color; ctx.fill();
+          if(p.life<=0) particles.splice(i,1);
+        }
+        requestAnimationFrame(loopFX);
+      }
+      loopFX();
+
+      // Cursor trail
+      const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(!prefersReduced){
+        document.addEventListener('mousemove', e=>{
+          for(let i=0;i<2;i++) addParticle(e.clientX, e.clientY, {spread:1.4, r:1+Math.random()*1.4, life:30, color:'rgba(56,189,248,0.55)', gravity:0});
+        });
+      }
+
+      // Confetti burst
+      window.burstConfetti = function(){
+        const colors = ['rgba(56,189,248,0.9)','rgba(34,211,238,0.9)','rgba(168,85,247,0.9)','rgba(255,255,255,0.9)'];
+        const cx = innerWidth/2, cy = innerHeight*0.35;
+        for(let i=0;i<140;i++){
+          const ang = Math.random()*Math.PI*2; const sp = 3+Math.random()*3.5;
+          addParticle(cx, cy, { vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp - 1.5, spread:0, r: 1.5+Math.random()*2.5, life: 80+Math.random()*40, color: colors[i%colors.length], gravity: 0.05 });
+        }
+      }
+
+      // Button ripple
+      document.querySelectorAll('.btn').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+          const r = document.createElement('span'); r.className='ripple';
+          const rect = btn.getBoundingClientRect();
+          r.style.left = (e.clientX - rect.left) + 'px';
+          r.style.top = (e.clientY - rect.top) + 'px';
+          btn.appendChild(r); r.addEventListener('animationend', ()=> r.remove());
+        });
+      });
+
+      // Tilt on surfaces
+      document.querySelectorAll('.surface').forEach(el=>{
+        el.setAttribute('data-tilt','');
+        el.addEventListener('mousemove', e=>{
+          const r = el.getBoundingClientRect();
+          const rx = ((e.clientY - r.top)/r.height - 0.5) * -6;
+          const ry = ((e.clientX - r.left)/r.width - 0.5) * 6;
+          el.style.setProperty('--rx', rx+'deg');
+          el.style.setProperty('--ry', ry+'deg');
+        });
+        el.addEventListener('mouseleave', ()=>{ el.style.removeProperty('--rx'); el.style.removeProperty('--ry'); });
+      });
+
+      // Floating words when a new start-quote appears
+      const wrap = document.querySelector('.breath-wrap');
+      function floatWords(text){
+        if(!text) return; const words = text.trim().split(' ').slice(0,4);
+        words.forEach((w,i)=>{ const s=document.createElement('span'); s.className='float-word'; s.textContent=w;
+          s.style.left = (45 + Math.random()*10) + '%'; s.style.top = (42 + Math.random()*12) + '%'; s.style.animationDelay = (i*0.08)+'s';
+          wrap.appendChild(s); s.addEventListener('animationend', ()=> s.remove());
+        });
+      }
+      const _pickQuote = pickQuote;
+      pickQuote = function(phase){ _pickQuote(phase); if(phase==='start') floatWords(quoteEl.textContent); };
+
+      // Glow synced to breath
+      let glowRun=false; function glowTick(ts){ if(glowRun && t0!=null){ const elapsed = ts - t0; const phase = Math.sin(((elapsed % CYCLE)/CYCLE) * Math.PI*2) * 0.5 + 0.5; circle.style.setProperty('--orbGlow', String(30 + 70*phase)); } requestAnimationFrame(glowTick); }
+      requestAnimationFrame(glowTick);
+
+      // Enhance lifecycle
+      const _startSession = startSession, _stopSession = stopSession, _endSession = endSession;
+      startSession = function(){ document.body.classList.add('bg-animate'); glowRun=true; _startSession(); };
+      stopSession = function(){ glowRun=false; document.body.classList.remove('bg-animate'); _stopSession(); };
+      endSession = function(){ _endSession(); glowRun=false; document.body.classList.remove('bg-animate'); burstConfetti(); };
+    })();
+  </script>
+</body>
+</html>
